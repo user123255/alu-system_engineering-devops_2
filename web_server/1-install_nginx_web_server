@@ -1,14 +1,15 @@
-#!/usr/bin/env bash
-# Install and configure Nginx web server
+#!/bin/bash
+# 1-install_nginx_web_server
+# Script to install Nginx and configure root page for Holberton School assignment
 
 # Update package list
 apt-get update -y
 
-# Install nginx
-apt-get install nginx -y
+# Install Nginx
+apt-get install -y nginx
 
-# Replace default page with required string
-echo "Holberton School" > /var/www/html/index.nginx-debian.html
+# Replace the default page with Holberton School
+echo "Holberton School" | sudo tee /var/www/html/index.html > /dev/null
 
-# Start nginx service (without systemctl)
-service nginx start
+# Restart Nginx using service (systemctl not allowed)
+service nginx restart
