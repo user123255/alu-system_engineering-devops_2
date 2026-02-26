@@ -7,8 +7,8 @@ apt-get update -y
 # Install nginx
 apt-get install nginx -y
 
-# Configure default page
-echo "Holberton School for the win!" > /var/www/html/index.html
+# Replace default page with required string
+echo "Holberton School" > /var/www/html/index.nginx-debian.html
 
-# Ensure nginx is running (without systemctl)
+# Start nginx service (without systemctl)
 service nginx start
