@@ -1,14 +1,20 @@
 #!/usr/bin/env bash
 # Install and configure Nginx web server
 
-# Update package list
+# Update packages
 apt-get update -y
 
 # Install nginx
 apt-get install nginx -y
 
-# Configure default page to return required string
+# Ensure nginx is started
+service nginx start
+
+# Allow HTTP traffic (if firewall exists)
+ufw allow 'Nginx HTTP' 2>/dev/null || true
+
+# Replace default page
 echo "Holberton School for the win!" > /var/www/html/index.nginx-debian.html
 
-# Ensure nginx is running
-service nginx start
+# Restart nginx to apply changes
+service nginx restart
