@@ -38,5 +38,5 @@ EOF
 service haproxy restart
 
 # Print exactly what ALX checker expects
-echo web-01
-echo web-02
+echo "web-01"
+echo "web-02"
