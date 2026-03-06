@@ -70,5 +70,5 @@ sudo systemctl restart haproxy
 sudo systemctl enable haproxy
 
 # Print hostnames for ALU checker
-echo "web-01"
-echo "web-02"
+echo web-01
+echo web-02
