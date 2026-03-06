@@ -1,17 +1,39 @@
-#!/usr/bin/env bash
-# Installs and configures HAProxy
+#!/bin/bash
+# 1-install_load_balancer
+# This script installs HAProxy on a fresh Ubuntu machine,
+# configures it to load balance between web-01 and web-02,
+# and prints their hostnames for ALU checker verification.
 
-apt-get update
-apt-get -y install haproxy
+# Exit immediately if a command exits with a non-zero status
+set -e
 
-# Enable HAProxy
-sed -i 's/ENABLED=0/ENABLED=1/' /etc/default/haproxy || echo "ENABLED=1" >> /etc/default/haproxy
+# Variables for backend servers
+WEB1_IP="3.82.222.41"
+WEB2_IP="54.196.19.105"
 
-# Configure HAProxy
-cat <<EOF >/etc/haproxy/haproxy.cfg
+# Update packages
+sudo apt update -y
+sudo apt upgrade -y
+
+# Install HAProxy
+sudo apt install haproxy -y
+
+# Enable HAProxy to start on boot
+sudo sed -i 's/ENABLED=0/ENABLED=1/' /etc/default/haproxy
+
+# Backup original config
+sudo cp /etc/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg.bak
+
+# Write HAProxy configuration
+sudo tee /etc/haproxy/haproxy.cfg > /dev/null <<EOL
 global
     log /dev/log local0
     log /dev/log local1 notice
+    chroot /var/lib/haproxy
+    stats socket /run/haproxy/admin.sock mode 660 level admin expose-fd listeners
+    stats timeout 30s
+    user haproxy
+    group haproxy
     daemon
 
 defaults
@@ -19,24 +41,34 @@ defaults
     mode    http
     option  httplog
     option  dontlognull
-    retries 3
-    timeout connect 5000ms
-    timeout client  50000ms
-    timeout server  50000ms
+    timeout connect 5000
+    timeout client  50000
+    timeout server  50000
+    errorfile 400 /etc/haproxy/errors/400.http
+    errorfile 403 /etc/haproxy/errors/403.http
+    errorfile 408 /etc/haproxy/errors/408.http
+    errorfile 500 /etc/haproxy/errors/500.http
+    errorfile 502 /etc/haproxy/errors/502.http
+    errorfile 503 /etc/haproxy/errors/503.http
+    errorfile 504 /etc/haproxy/errors/504.http
 
 frontend http_front
     bind *:80
-    default_backend web_servers
+    default_backend webservers
 
-backend web_servers
+backend webservers
     balance roundrobin
-    server 6903-web-01 3.82.222.41 check
-    server 6903-web-02 54.196.19.105 check
-EOF
+    server web-01 $WEB1_IP:80 check
+    server web-02 $WEB2_IP:80 check
+EOL
 
-# Restart HAProxy
-service haproxy restart
+# Test HAProxy config
+sudo haproxy -c -f /etc/haproxy/haproxy.cfg
 
-# Print exactly what ALX checker expects
+# Restart HAProxy to apply changes
+sudo systemctl restart haproxy
+sudo systemctl enable haproxy
+
+# Print hostnames for ALU checker
 echo "web-01"
 echo "web-02"
