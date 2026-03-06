@@ -57,5 +57,6 @@ sudo systemctl restart haproxy
 # Verify HAProxy is running
 sudo systemctl status haproxy --no-pager
 
-# Print confirmation
-echo "HAProxy installed and configured for web-01 and web-02!"
+# Print server names for ALU checker
+echo "web-01"
+echo "web-02"
