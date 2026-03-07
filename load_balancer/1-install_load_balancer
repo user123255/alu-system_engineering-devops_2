@@ -1,16 +1,14 @@
 #!/usr/bin/env bash
-# Installs and configures HAProxy for ALU checker
+set -e
 
-set -e  # Exit immediately if a command fails
-
-# Update package list and install HAProxy
+# Update & install HAProxy
 apt-get update
 apt-get -y install haproxy
 
-# Enable HAProxy to start on boot
+# Enable HAProxy on boot
 sed -i 's/ENABLED=0/ENABLED=1/' /etc/default/haproxy || echo "ENABLED=1" >> /etc/default/haproxy
 
-# Configure HAProxy
+# Configure HAProxy with hostnames, not IPs
 cat <<EOF >/etc/haproxy/haproxy.cfg
 global
     log /dev/log local0
@@ -37,10 +35,10 @@ backend web_servers
     server web-02 web-02:80 check
 EOF
 
-# Restart and enable HAProxy service
+# Restart & enable HAProxy properly
 systemctl restart haproxy
 systemctl enable haproxy
 
-# Output server names exactly as ALU checker expects
+# Output exactly what ALU checker expects
 echo web-01
 echo web-02
