@@ -1,42 +1,63 @@
-#!/usr/bin/env bash
-# Installs and configures HAProxy
+#!/bin/bash
+# 1-install_load_balancer
+# Installs and configures HAProxy load balancer for ALU
 
+set -e
+
+# Update packages
 apt-get update -y
+apt-get upgrade -y
+
+# Install HAProxy
 apt-get install -y haproxy
 
-# Enable HAProxy
-sed -i 's/ENABLED=0/ENABLED=1/' /etc/default/haproxy || echo "ENABLED=1" >> /etc/default/haproxy
+# Enable HAProxy to start at boot
+systemctl enable haproxy
+
+# Replace with your actual student ID
+STUDENT_ID="6903"  
+
+# Set hostnames for web servers
+WEB1_HOSTNAME="${6903}-web-01"
+WEB2_HOSTNAME="${6903}-web-02"
+
+# Optional: Add entries to /etc/hosts if needed
+# echo "127.0.0.1 ${WEB1_HOSTNAME} ${WEB2_HOSTNAME}" >> /etc/hosts
+
+# Backup original HAProxy config
+cp /etc/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg.bak
 
 # Configure HAProxy
-cat <<EOF >/etc/haproxy/haproxy.cfg
+cat > /etc/haproxy/haproxy.cfg <<EOF
 global
     log /dev/log local0
     log /dev/log local1 notice
     daemon
+    maxconn 256
 
 defaults
-    log     global
-    mode    http
-    option  httplog
-    option  dontlognull
+    log global
+    mode http
+    option httplog
+    option dontlognull
     retries 3
     timeout connect 5000ms
-    timeout client  50000ms
-    timeout server  50000ms
+    timeout client 50000ms
+    timeout server 50000ms
 
 frontend http_front
     bind *:80
-    default_backend web_servers
+    default_backend http_back
 
-backend web_servers
+backend http_back
     balance roundrobin
     server web-01 3.82.222.41:80 check
     server web-02 54.196.19.105:80 check
+    http-request set-header X-Served-By %[srv_name]
 EOF
 
-# Restart HAProxy
-service haproxy restart
+# Restart HAProxy to apply changes
+systemctl restart haproxy
 
-# Print what the checker expects
-echo web-01
-echo web-02
+echo "HAProxy installed and configured successfully!"
+echo "Load balancing between $WEB1_HOSTNAME and $WEB2_HOSTNAME with round-robin."
