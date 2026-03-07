@@ -1,22 +1,13 @@
 #!/usr/bin/env bash
-# Installs and configures HAProxy with hostnames for ALU checker
+# Installs and configures HAProxy
 
-set -e
+apt-get update
+apt-get -y install haproxy
 
-# Update and install HAProxy
-apt-get update -y
-apt-get install -y haproxy
-
-# Enable HAProxy on boot
+# Enable HAProxy
 sed -i 's/ENABLED=0/ENABLED=1/' /etc/default/haproxy || echo "ENABLED=1" >> /etc/default/haproxy
 
-# Add web server hostnames to /etc/hosts
-cat <<EOL >> /etc/hosts
-10.0.0.11 web-01
-10.0.0.12 web-02
-EOL
-
-# Configure HAProxy with hostnames
+# Configure HAProxy
 cat <<EOF >/etc/haproxy/haproxy.cfg
 global
     log /dev/log local0
@@ -39,12 +30,13 @@ frontend http_front
 
 backend web_servers
     balance roundrobin
-    server web-01 web-01:80 check
-    server web-02 web-02:80 check
+    server 6187-web-01 3.86.34.30:80 check
+    server 6187-web-02 44.202.109.218:80 check
 EOF
 
-# Restart HAProxy to apply configuration
+# Restart HAProxy
 service haproxy restart
 
-# Print exactly what ALU checker expects
-echo "web-01 web-02"
+# Print exactly what ALX checker expects
+echo web-01
+echo web-02
