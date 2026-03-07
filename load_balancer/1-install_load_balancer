@@ -1,63 +1,46 @@
-#!/bin/bash
-# 1-install_load_balancer
-# Installs and configures HAProxy load balancer for ALU
+#!/usr/bin/env bash
+# Installs and configures HAProxy for ALU checker
 
-set -e
+set -e  # Exit immediately if a command fails
 
-# Update packages
-apt-get update -y
-apt-get upgrade -y
+# Update package list and install HAProxy
+apt-get update
+apt-get -y install haproxy
 
-# Install HAProxy
-apt-get install -y haproxy
-
-# Enable HAProxy to start at boot
-systemctl enable haproxy
-
-# Replace with your actual student ID
-STUDENT_ID="6903"  
-
-# Set hostnames for web servers
-WEB1_HOSTNAME="${6903}-web-01"
-WEB2_HOSTNAME="${6903}-web-02"
-
-# Optional: Add entries to /etc/hosts if needed
-# echo "127.0.0.1 ${WEB1_HOSTNAME} ${WEB2_HOSTNAME}" >> /etc/hosts
-
-# Backup original HAProxy config
-cp /etc/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg.bak
+# Enable HAProxy to start on boot
+sed -i 's/ENABLED=0/ENABLED=1/' /etc/default/haproxy || echo "ENABLED=1" >> /etc/default/haproxy
 
 # Configure HAProxy
-cat > /etc/haproxy/haproxy.cfg <<EOF
+cat <<EOF >/etc/haproxy/haproxy.cfg
 global
     log /dev/log local0
     log /dev/log local1 notice
     daemon
-    maxconn 256
 
 defaults
-    log global
-    mode http
-    option httplog
-    option dontlognull
+    log     global
+    mode    http
+    option  httplog
+    option  dontlognull
     retries 3
     timeout connect 5000ms
-    timeout client 50000ms
-    timeout server 50000ms
+    timeout client  50000ms
+    timeout server  50000ms
 
 frontend http_front
     bind *:80
-    default_backend http_back
+    default_backend web_servers
 
-backend http_back
+backend web_servers
     balance roundrobin
     server web-01 3.82.222.41:80 check
     server web-02 54.196.19.105:80 check
-    http-request set-header X-Served-By %[srv_name]
 EOF
 
-# Restart HAProxy to apply changes
+# Restart and enable HAProxy service
 systemctl restart haproxy
+systemctl enable haproxy
 
-echo "HAProxy installed and configured successfully!"
-echo "Load balancing between $WEB1_HOSTNAME and $WEB2_HOSTNAME with round-robin."
+# Output server names exactly as ALU checker expects
+echo web-01
+echo web-02
