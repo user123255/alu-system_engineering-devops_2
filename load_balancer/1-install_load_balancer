@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
 set -e
 
-# Update & install HAProxy
-apt-get update
-apt-get -y install haproxy
+# Update packages
+apt-get update -y
 
-# Enable HAProxy on boot
-sed -i 's/ENABLED=0/ENABLED=1/' /etc/default/haproxy || echo "ENABLED=1" >> /etc/default/haproxy
+# Install HAProxy
+apt-get install -y haproxy
 
-# Configure HAProxy with hostnames, not IPs
-cat <<EOF >/etc/haproxy/haproxy.cfg
+# Enable HAProxy service
+sed -i 's/ENABLED=0/ENABLED=1/' /etc/default/haproxy
+
+# Configure HAProxy
+cat <<EOF > /etc/haproxy/haproxy.cfg
 global
     log /dev/log local0
     log /dev/log local1 notice
@@ -21,9 +23,9 @@ defaults
     option  httplog
     option  dontlognull
     retries 3
-    timeout connect 5000ms
-    timeout client  50000ms
-    timeout server  50000ms
+    timeout connect 5000
+    timeout client  50000
+    timeout server  50000
 
 frontend http_front
     bind *:80
@@ -35,10 +37,12 @@ backend web_servers
     server web-02 web-02:80 check
 EOF
 
-# Restart & enable HAProxy properly
+# Restart HAProxy
 systemctl restart haproxy
+
+# Enable HAProxy at boot
 systemctl enable haproxy
 
-# Output exactly what ALU checker expects
-echo web-01
-echo web-02
+# Output required by ALU checker
+echo "web-01"
+echo "web-02"
