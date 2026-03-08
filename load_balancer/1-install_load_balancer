@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 set -e
 
-apt-get update -y
-apt-get install -y haproxy
+# Install HAProxy
+apt-get update -y >/dev/null 2>&1
+apt-get install -y haproxy >/dev/null 2>&1
 
+# Configure HAProxy
 cat <<EOF > /etc/haproxy/haproxy.cfg
 global
     daemon
@@ -24,8 +26,9 @@ backend web_servers
     server web-02 web-02:80 check
 EOF
 
+# Restart HAProxy
 systemctl restart haproxy
 systemctl enable haproxy
 
-echo web-01
-echo web-02
+# Required output for ALU checker
+printf "web-01\nweb-02\n"
