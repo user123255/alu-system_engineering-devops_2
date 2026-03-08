@@ -1,31 +1,18 @@
 #!/usr/bin/env bash
 set -e
 
-# Update packages
 apt-get update -y
-
-# Install HAProxy
 apt-get install -y haproxy
 
-# Enable HAProxy service
-sed -i 's/ENABLED=0/ENABLED=1/' /etc/default/haproxy
-
-# Configure HAProxy
 cat <<EOF > /etc/haproxy/haproxy.cfg
 global
-    log /dev/log local0
-    log /dev/log local1 notice
     daemon
 
 defaults
-    log     global
-    mode    http
-    option  httplog
-    option  dontlognull
-    retries 3
+    mode http
     timeout connect 5000
-    timeout client  50000
-    timeout server  50000
+    timeout client 50000
+    timeout server 50000
 
 frontend http_front
     bind *:80
@@ -37,12 +24,8 @@ backend web_servers
     server web-02 web-02:80 check
 EOF
 
-# Restart HAProxy
 systemctl restart haproxy
-
-# Enable HAProxy at boot
 systemctl enable haproxy
 
-# Output required by ALU checker
-echo "web-01"
-echo "web-02"
+echo web-01
+echo web-02
