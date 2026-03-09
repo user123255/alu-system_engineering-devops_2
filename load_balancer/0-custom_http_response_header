@@ -1,41 +1,40 @@
-#!/usr/bin/env bash
-# a script to install nginx web server & make the following configurations:
+#!/bin/bash
+# 0-custom_http_response_header - configure Nginx with custom header X-Served-By
 
-apt-get update
-apt-get install -y nginx
+# Install Nginx if not installed
+if ! command -v nginx &> /dev/null
+then
+    echo "[*] Installing Nginx..."
+    sudo apt update && sudo apt install -y nginx
+fi
 
-mkdir /etc/nginx/html
+# Set the hostname (replace STUDENT_ID with your ALU student ID)
+sudo hostnamectl set-hostname <STUDENT_ID>-web-$(echo $HOSTNAME | grep -oE '[0-9]+$' || echo "01")
 
-touch /etc/nginx/html/index.html
+# Create Nginx config with custom header
+cat <<EOF | sudo tee /etc/nginx/conf.d/custom_header.conf
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
 
+    root /var/www/html;
+    index index.html index.htm index.nginx-debian.html;
 
-echo "Holberton School" > /etc/nginx/html/index.html
+    server_name _;
 
-# Create custom 404 error page
-echo "<!DOCTYPE html>
-<html>
-<head>
-  <title>404 Not Found</title>
-</head>
-<body>
-  <h1>404 Not Found</h1>
-  <p>Ceci n'est pas une page</p>
-</body>
-</html>" | sudo tee /var/www/html/404.html >/dev/null
+    add_header X-Served-By \$hostname;
 
-printf %s "server {
-     listen      80 default_server;
-     listen      [::]:80 default_server;
-     root        /etc/nginx/html;
-     index       index.html index.htm;
-     add_header X-Served-By $HOSTNAME;
-     error_page 404 /404.html;
-     location /404 {
-        root /etc/nginx/html;
-        internal;
-     }
+    location / {
+        try_files \$uri \$uri/ =404;
+    }
 }
-" > /etc/nginx/sites-available/default
+EOF
 
-service nginx restart
+# Remove default config to avoid conflict
+sudo rm -f /etc/nginx/sites-enabled/default
+
+# Test and restart Nginx
+sudo nginx -t && sudo systemctl restart nginx
+
+echo "[+] Nginx configured with X-Served-By: $(hostname)"
 
