@@ -1,14 +1,21 @@
-#!/usr/bin/env bash
-# Installs and configures HAProxy
+#!/bin/bash
+# 1-install_load_balancer.sh
+# This script installs HAProxy and configures it for ALU checker
 
-apt-get update
-apt-get -y install haproxy
+# Update package list
+sudo apt update -y
 
-# Enable HAProxy
-sed -i 's/ENABLED=0/ENABLED=1/' /etc/default/haproxy || echo "ENABLED=1" >> /etc/default/haproxy
+# Install HAProxy
+sudo apt install -y haproxy
 
-# Configure HAProxy
-cat <<EOF >/etc/haproxy/haproxy.cfg
+# Enable HAProxy to start on boot
+sudo systemctl enable haproxy
+
+# Backup original config
+sudo cp /etc/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg.bak
+
+# Configure HAProxy for web-01 and web-02
+sudo bash -c 'cat > /etc/haproxy/haproxy.cfg <<EOF
 global
     log /dev/log local0
     log /dev/log local1 notice
@@ -19,24 +26,27 @@ defaults
     mode    http
     option  httplog
     option  dontlognull
-    retries 3
-    timeout connect 5000ms
-    timeout client  50000ms
-    timeout server  50000ms
+    timeout connect 5000
+    timeout client  50000
+    timeout server  50000
 
 frontend http_front
     bind *:80
-    default_backend web_servers
+    default_backend http_back
 
-backend web_servers
+backend http_back
     balance roundrobin
-    server 6187-web-01 3.86.34.30:80 check
-    server 6187-web-02 44.202.109.218:80 check
-EOF
+    server web-01 10.0.0.11:80 check
+    server web-02 10.0.0.12:80 check
+EOF'
 
-# Restart HAProxy
-service haproxy restart
+# Restart HAProxy to apply configuration
+sudo systemctl restart haproxy
 
-# Print exactly what ALX checker expects
-echo web-01
-echo web-02
+# Wait a few seconds for HAProxy to start
+sleep 5
+
+# Test both servers via the load balancer
+echo "Checking HAProxy output:"
+curl -s http://localhost | grep "Hello from"
+curl -s http://localhost | grep "Hello from"
