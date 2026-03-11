@@ -1,24 +1,18 @@
 #!/usr/bin/env bash
+# This Bash script configures a new Ubuntu machine to match the task requirements
 
-# Install HAProxy
 apt-get update -y
 apt-get install -y haproxy
 
-# Configure HAProxy
-cat > /etc/haproxy/haproxy.cfg << 'EOF'
+cat > /etc/haproxy/haproxy.cfg <<EOF
 global
-    log /dev/log local0
-    log /dev/log local1 notice
     daemon
 
 defaults
-    log     global
-    mode    http
-    option  httplog
-    option  dontlognull
+    mode http
     timeout connect 5000
-    timeout client  50000
-    timeout server  50000
+    timeout client 50000
+    timeout server 50000
 
 frontend http_front
     bind *:80
@@ -30,5 +24,4 @@ backend http_back
     server web-02 54.196.19.105:80 check
 EOF
 
-# Enable HAProxy
 service haproxy restart
